@@ -1,3 +1,9 @@
+const readline = require('readline');
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
 const skills = [
     " Easy       | Rhetorical Synthesis",
     " Easy       | Percentages",
@@ -88,9 +94,13 @@ const skills = [
     " Medium     | Transitions",
 ];
 
-let weights = [ ];
-let net_wrong = [ ];
 
+// ... (skills array remains the same) ...
+
+let weights = [];
+let net_wrong = [];
+
+// Initialize arrays
 for (let i = 0; i < skills.length; i++) {
     weights.push(1.0 / skills.length);
     net_wrong.push(0);
@@ -99,3 +109,41 @@ for (let i = 0; i < skills.length; i++) {
 function f(x) {
     return (2 / skills.length) / (1 + Math.exp(-x / 3));
 }
+
+async function methane(message) {
+    return new Promise((resolve) => {
+        rl.question(message, (answer) => {
+            const input = parseInt(answer);
+            
+            // Validate input
+            if (isNaN(input) || input < 0 || input >= skills.length) {
+                console.log(`Please enter a number between 0 and ${skills.length - 1}`);
+                resolve(false);
+                return;
+            }
+
+            // Update weights
+            net_wrong[input]++;
+            const oldWeight = weights[input];
+            weights[input] = f(net_wrong[input]);
+
+            // Adjust other weights
+            for (let i = 0; i < weights.length; i++) {
+                if (i !== input) {
+                    weights[i] -= ((weights[input] - oldWeight) / skills.length);
+                }
+            }
+            resolve(true);
+        });
+    });
+}
+
+async function main() {
+    while (true) {
+        await methane(`Enter an integer between 0 and ${skills.length - 1} inclusive: `);
+        console.log('Weights updated. Current weights:', weights);
+    }
+}
+
+// Start the program
+main().catch(console.error).finally(() => rl.close());
